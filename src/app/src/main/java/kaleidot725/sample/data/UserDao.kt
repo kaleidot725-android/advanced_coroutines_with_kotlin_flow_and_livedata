@@ -16,7 +16,4 @@ interface UserDao {
 
     @Query("select * from users")
     fun getAll(): Flow<List<User>>
-
-    @Query("select * from users where age = :age")
-    fun getAllWithOverAge(age: Int): Flow<List<User>>
 }

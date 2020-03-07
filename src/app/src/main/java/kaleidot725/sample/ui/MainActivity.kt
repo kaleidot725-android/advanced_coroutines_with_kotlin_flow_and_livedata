@@ -30,5 +30,17 @@ class MainActivity : AppCompatActivity() {
         viewModel.users.observe(this, Observer {
             binding.mainText.text = it.toString()
         })
+
+        viewModel.usersSortedByFirstName.observe(this, Observer {
+            binding.sortFirstNameText.text = it.toString()
+        })
+
+        viewModel.usersSortedByLastName.observe(this, Observer {
+            binding.sortLastNameText.text = it.toString()
+        })
+
+        viewModel.usersSortedByAge.observe(this, Observer {
+            binding.sortAgeText.text = it.toString()
+        })
     }
 }
