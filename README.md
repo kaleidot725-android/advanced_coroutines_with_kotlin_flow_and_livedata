@@ -273,7 +273,6 @@ class MainActivity : AppCompatActivity() {
 
 # 起動してみる
 
-![Screenshot_1583677890](/Users/kaleidot725/Desktop/Screenshot_1583677890.png)
-
+![clipboard.png](GT_crIql-clipboard.png)
 
 
