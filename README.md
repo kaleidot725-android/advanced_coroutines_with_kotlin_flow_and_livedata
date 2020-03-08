@@ -1,34 +1,34 @@
-# ［Android］Coroutine Flow と Room を組み合わせたサンプル
+# 2020/03/09 ［Android］Coroutine Flow と Room を組み合わせたサンプル
 
-
-
-Coroutine Flow と Room を組み合わせたサンプルを作成していきます。
-
-アプリケーションは公式が推奨するアーキテクチャである MVVM を利用して作成します。
-
-
+Coroutine Flow と Room を組み合わせたサンプルを作成します。
+アーキテクチャは Google が推奨している MVVM で作成を進めます。
 
 ![img](https://developer.android.com/topic/libraries/architecture/images/final-architecture.png)
 
-
-
 # Setup
 
+アプリケーションの作成に必要となる、
+Koin・Room・Flow(Coroutines)のライブラリをインストールします。
 
+| ライブラリ | バージョン | 説明 |
+| ------- | ------- | ------- |
+| Koin | 2.1.3 | DIライブラリ |
+| Room | 2.2.4 | 永続化を行うSQLiteを使いやすくしてくれるライブラリ |
+| Coroutines | 1.3.4 | 非同期処理やノンブロッキング処理を行うためライブラリ |
 
 ```groovy
 dependencies {
-    　　　︙
-    def room_version = "2.2.4"
-    implementation "androidx.room:room-runtime:$room_version"
-    implementation "androidx.room:room-ktx:$room_version"
-    kapt "androidx.room:room-compiler:$room_version"
-
+    　　　︙  
     def koin_version = "2.1.3"
     implementation "org.koin:koin-android:$koin_version"
     implementation "org.koin:koin-android-scope:$koin_version"
     implementation "org.koin:koin-android-viewmodel:$koin_version"
     implementation "org.koin:koin-android-ext:$koin_version"
+  
+    def room_version = "2.2.4"
+    implementation "androidx.room:room-runtime:$room_version"
+    implementation "androidx.room:room-ktx:$room_version"
+    kapt "androidx.room:room-compiler:$room_version"
 
     def coroutines_version = "1.3.4"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutines_version"
@@ -39,12 +39,21 @@ dependencies {
 }
 ```
 
-
-
 # Model
+Room を利用してデータを永続化する層を作成していきます。
+次の役割のクラスが必要になるので実装していきます。
 
+| 役割 | クラス名 | 役割 |
+| ------- | ------- | -------- |
+| Entity | User | データベースのテーブルを表すクラス |
+| Data Access Objects | UserDao | データベースにアクセスするメソッドを定義するクラス |
+| Room Database | Database | Dao を生成するための RoomDatabase を継承した抽象クラス |
+| Repository | UserRepository | UserDao を利用してデータにアクセスするクラス |
 
+![clipboard.png](Py8xT2Rz-clipboard.png)
+**Entity**
 
+ID, FirstName, LastName Age を持つ User クラスを用意する。
 ```kotlin
 @Entity(tableName = "users")
 data class User(
@@ -55,7 +64,8 @@ data class User(
 )
 ```
 
-
+**Data Access Objects**
+定義した User クラスを追加, 削除, 全削除, 全取得するクラスを定義する。Flow と連携したい場合は User 関数の戻り値に `Flow<T>` とします。そうすれば Room が勝手に `Flow<T>` を返すようにしてくれる。
 
 ```kotlin
 @Dao
@@ -74,7 +84,8 @@ interface UserDao {
 }
 ```
 
-
+**Room Database**
+Database を作成しを生成し、取得する RoomDatabase クラスを定義する。
 
 ```kotlin
 @Database(entities = arrayOf(User::class), version = 1)
@@ -84,6 +95,8 @@ abstract class Database : RoomDatabase() {
 ```
 
 
+**Repository**
+Data Access Object を利用してデータを取得する Repository を作成する。UserDao は単純に CRUD 実行するクラスですが、Repository にはソートなどアプリが要求する形にデータを加工する機能を実装する。
 
 ```kotlin
 class UserRepository(private val userDao: UserDao) {
@@ -101,6 +114,7 @@ class UserRepository(private val userDao: UserDao) {
             it -> it.sortedBy { it.age }
     }
 
+    // サンプルデータを生成するために定義、普段は必要ない関数です。
     fun tryUpdateRecentUsersCache() {
         userDao.deleteAll()
         userDao.insert(User(1, "A", "G", 10))
@@ -114,7 +128,43 @@ class UserRepository(private val userDao: UserDao) {
 }
 ```
 
+## ViewModel
 
+`Flow<T>` は `asLiveData()` で `LiveData<T>` に変換できる。
+ViewModel では Viewが`LiveData<T>`を購読できるよう、
+Repository から取得した `Flow<T>` を `LiveData<T>` に変換する。
+
+```Kotlin
+class MainViewModel(
+  private val repo: UserRepository
+): ViewModel() {
+    val users: LiveData<List<User>> 
+  			= repo.getUsers().asLiveData()
+    val usersSortedByFirstName: LiveData<List<User>> 
+  			= repo.getUserSortedByFirstName().asLiveData()
+    val usersSortedByLastName: LiveData<List<User>> 
+  			= repo.getUserSortedByLastName().asLiveData()
+    val usersSortedByAge: LiveData<List<User>> 
+  			= repo.getUserSortedByAge().asLiveData()
+}
+```
+
+サンプルデータを書き込む処理を`init`に追加する、
+本来は必要のないので必要に応じて追加・削除してください。
+
+```Kotlin
+init {
+    viewModelScope.launch(Dispatchers.IO) {
+        repo.tryUpdateRecentUsersCache()
+    }
+}
+```
+
+## View
+
+**Koin**
+
+Koin で ViewModel を生成するための AppModule を定義する。
 
 ```Kotlin
 val appModule = module {
@@ -136,36 +186,7 @@ val appModule = module {
 }
 ```
 
-
-
-## ViewModel
-
-
-
-```Kotlin
-class MainViewModel(private val repo: UserRepository): ViewModel() {
-    init {
-        viewModelScope.launch(Dispatchers.IO) {
-            repo.tryUpdateRecentUsersCache()
-        }
-    }
-
-    val users: LiveData<List<User>> 
-  			= repo.getUsers().asLiveData()
-    val usersSortedByFirstName: LiveData<List<User>> 
-  			= repo.getUserSortedByFirstName().asLiveData()
-    val usersSortedByLastName: LiveData<List<User>> 
-  			= repo.getUserSortedByLastName().asLiveData()
-    val usersSortedByAge: LiveData<List<User>> 
-  			= repo.getUserSortedByAge().asLiveData()
-}
-```
-
-
-
-## View
-
-
+**MainActivity**
 
 ```kotlin
 class MainActivity : AppCompatActivity() {
@@ -203,7 +224,7 @@ class MainActivity : AppCompatActivity() {
 }
 ```
 
-
+**activity_main.xml**
 
 ```XML
 <layout>
@@ -250,15 +271,9 @@ class MainActivity : AppCompatActivity() {
 </layout>
 ```
 
-
-
 # 起動してみる
 
-
-
 ![Screenshot_1583677890](/Users/kaleidot725/Desktop/Screenshot_1583677890.png)
-
-
 
 
 
