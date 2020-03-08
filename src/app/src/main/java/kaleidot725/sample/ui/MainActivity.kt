@@ -24,7 +24,8 @@ class MainActivity : AppCompatActivity() {
             modules(appModule)
         }
 
-        val binding : ActivityMainBinding = DataBindingUtil.setContentView(this, R.layout.activity_main)
+        val binding : ActivityMainBinding =
+            DataBindingUtil.setContentView(this, R.layout.activity_main)
         binding.viewModel = viewModel
 
         viewModel.users.observe(this, Observer {

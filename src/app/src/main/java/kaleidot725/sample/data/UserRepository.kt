@@ -1,14 +1,21 @@
 package kaleidot725.sample.data
 
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 
 class UserRepository(private val userDao: UserDao) {
     fun getUsers() = userDao.getAll()
-    fun getUserSortedByFirstName() = getUsers().map { it -> it.sortedBy { it.firstName } }
-    fun getUserSortedByLastName() = getUsers().map { it -> it.sortedBy { it.lastName }}
-    fun getUserSortedByAge() = getUsers().map { it -> it.sortedBy { it.age } }
+
+    fun getUserSortedByFirstName() = getUsers().map {
+            it -> it.sortedBy { it.firstName }
+    }
+
+    fun getUserSortedByLastName() = getUsers().map {
+            it -> it.sortedBy { it.lastName }
+    }
+
+    fun getUserSortedByAge() = getUsers().map {
+            it -> it.sortedBy { it.age }
+    }
 
     fun tryUpdateRecentUsersCache() {
         userDao.deleteAll()
