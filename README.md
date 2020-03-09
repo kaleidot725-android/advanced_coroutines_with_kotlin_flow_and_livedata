@@ -1,14 +1,22 @@
-# 2020/03/09 ［Android］Coroutine Flow と Room を組み合わせたサンプル
+# 2020/03/09 ［Android］Coroutine Flow と Room を組み合わせる
+
+# はじめに
 
 Coroutine Flow と Room を組み合わせたサンプルを作成します。
 アーキテクチャは Google が推奨している MVVM で作成を進めます。
 
 ![img](https://developer.android.com/topic/libraries/architecture/images/final-architecture.png)
 
+# TL;DR
+
+- Flow と Room を連携するときは Dao の戻り値を Flow にすればよい
+- Room から取得した Flow は `asLiveData` で LiveData に変換できる。
+- Flow を LiveData に変換したあとは、通常の LiveData と同じで Observe して利用する。
+
 # Setup
 
 アプリケーションの作成に必要となる、
-Koin・Room・Flow(Coroutines)のライブラリをインストールします。
+Koin・Room・Flow(Coroutines)のライブラリをインストールする。
 
 | ライブラリ | バージョン | 説明 |
 | ------- | ------- | ------- |
@@ -40,8 +48,8 @@ dependencies {
 ```
 
 # Model
-Room を利用してデータを永続化する層を作成していきます。
-次の役割のクラスが必要になるので実装していきます。
+Room を利用してデータを永続化する層を作成する。
+Room を利用するには次のクラスが必要になるので実装していく。
 
 | 役割 | クラス名 | 役割 |
 | ------- | ------- | -------- |
@@ -164,7 +172,8 @@ init {
 
 **Koin**
 
-Koin で ViewModel を生成するための AppModule を定義する。
+ViewModel を生成するため Koin の AppModule を定義する。
+次の手順で RoomDatabase, UserDao, UserRepository を生成し、MainViewModel を生成する。
 
 ```Kotlin
 val appModule = module {
@@ -188,13 +197,18 @@ val appModule = module {
 
 **MainActivity**
 
+AppModule を利用して Koin を初期化し、 viewModel を取得できるようにする。
+そして ViewModel をバインディング、また ViewModel の LiveData を Observe する。
+Observe したデータは用意した TextView に表示するようにする。
+
 ```kotlin
 class MainActivity : AppCompatActivity() {
     private val viewModel : MainViewModel by viewModel()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
+ 
+        // Koin の初期化
         startKoin {
             androidLogger()
             androidContext(applicationContext)
@@ -224,7 +238,7 @@ class MainActivity : AppCompatActivity() {
 }
 ```
 
-**activity_main.xml**
+![clipboard.png](74irDiKI-clipboard.png)
 
 ```XML
 <layout>
@@ -271,8 +285,8 @@ class MainActivity : AppCompatActivity() {
 </layout>
 ```
 
-# 起動してみる
+# おわりに
 
-![clipboard.png](GT_crIql-clipboard.png)
+アプリケーションを起動すると、Observe した時点でデータ取得し、TextView に結果が表示される。
 
-
+![clipboard.png](gFpc2gav-clipboard.png)
