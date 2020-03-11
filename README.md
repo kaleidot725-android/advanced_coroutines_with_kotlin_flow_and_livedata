@@ -1,4 +1,4 @@
-# 2020/03/09 ［Android］Coroutine Flow と Room を組み合わせる
+# ［Android］Coroutine Flow と Room を組み合わせる
 
 # はじめに
 
